@@ -1,25 +1,37 @@
 import chess.pgn
 import pandas as pd
+import glob
+import os
 
-def preprocess_pgn_to_uci(file_paths):
+def preprocess_folder_to_uci(folder_path, output_filename="lichess_uci_dataset.csv"):
+    # 1. 지정된 폴더 내의 모든 .pgn 파일 경로를 리스트로 가져오기
+    # 예: folder_path가 'data'라면 'data/*.pgn'을 검색
+    search_pattern = os.path.join(folder_path, "*.pgn")
+    file_paths = glob.glob(search_pattern)
+    
+    if not file_paths:
+        print(f"'{folder_path}' 폴더 내에 PGN 파일이 존재하지 않습니다.")
+        return None
+
+    print(f"총 {len(file_paths)}개의 PGN 파일을 찾았습니다. 전처리를 시작합니다...\n")
+    
     all_games = []
 
+    # 2. 찾은 모든 파일에 대해 반복 작업 수행
     for file_path in file_paths:
+        file_name = os.path.basename(file_path)
+        print(f"-> 처리 중: {file_name}")
+        
         with open(file_path, "r", encoding="utf-8") as pgn_file:
+            game_count = 0
             while True:
-                # 게임 단위로 읽기 (메모리 효율성)
                 game = chess.pgn.read_game(pgn_file)
-                
                 if game is None:
-                    break  # 더 이상 읽을 게임이 없으면 종료
-
-                # 1. 메타데이터 추출 (승패, ECO)
+                    break  # 파일의 끝에 도달하면 종료
+                
+                # 메타데이터 및 기보(UCI) 추출
                 result = game.headers.get("Result", "N/A")
                 eco = game.headers.get("ECO", "N/A")
-                
-                # 2. 기보를 UCI 포맷으로 변환
-                # mainline_moves()의 각 chess.Move 객체에 대해 .uci()를 호출합니다.
-                # 예: 'e2e4 c7c5 g1f3 ...' 형태로 공백을 기준으로 연결합니다.
                 uci_moves = " ".join(move.uci() for move in game.mainline_moves())
 
                 all_games.append({
@@ -27,20 +39,30 @@ def preprocess_pgn_to_uci(file_paths):
                     "ECO": eco,
                     "UCI_Moves": uci_moves
                 })
+                game_count += 1
+                
+        print(f"   완료: {file_name} (추출된 게임 수: {game_count}개)")
     
-    return pd.DataFrame(all_games)
+    # 3. 추출된 전체 데이터를 DataFrame으로 변환 및 CSV 저장
+    df_uci = pd.DataFrame(all_games)
+    df_uci.to_csv(output_filename, index=False)
+    
+    print(f"\n모든 파일의 전처리가 완료되었습니다!")
+    print(f"총 {len(df_uci)}개의 게임 데이터가 '{output_filename}' 파일로 저장되었습니다.")
+    
+    return df_uci
 
-# 처리할 파일 리스트 정의 (업로드하신 파일명 기준)
-files = ["lichess_elite_2016-09.pgn", "lichess_elite_2017-06.pgn"]
+# --------------------------
+# 실행 부분
+# --------------------------
+# PGN 파일들이 모여있는 폴더의 경로를 입력하세요. 
+# (현재 스크립트와 같은 경로에 'pgn_data'라는 폴더가 있다고 가정)
+TARGET_FOLDER = "./sample" 
+OUTPUT_CSV_NAME = "all_lichess_uci_data.csv"
 
-# 실행 및 결과 확인
-print("데이터 전처리를 시작합니다. 파일 크기에 따라 시간이 소요될 수 있습니다...")
-df_uci = preprocess_pgn_to_uci(files)
+# 함수 실행
+df = preprocess_folder_to_uci(TARGET_FOLDER, OUTPUT_CSV_NAME)
 
-# 상위 5개 데이터 출력
-print(df_uci.head())
-
-# 모델 학습을 위해 CSV 파일로 저장 (추천)
-# CSV로 저장해두면 이후 학습 스크립트에서 PGN을 파싱할 필요 없이 빠르게 로드 가능합니다.
-df_uci.to_csv("lichess_uci_dataset.csv", index=False)
-print("전처리 및 CSV 저장이 완료되었습니다.")
+# 결과 일부 확인
+if df is not None:
+    print(df.head())
