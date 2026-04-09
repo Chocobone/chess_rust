@@ -12,3 +12,8 @@
 /data/yho7374/anaconda3/bin/conda init
 source ~/.bashrc
 conda activate training
+
+cd /data/yho7374/repos/chess_rust/shell
+./preprocess.sh
+./training.sh
+./test_rust.sh
