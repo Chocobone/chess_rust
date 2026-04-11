@@ -1,8 +1,8 @@
 import glob
 import os
 
-import chess.pgn
 import pandas as pd
+from chess import pgn
 
 
 def preprocess_folder_to_uci(folder_path, output_filename):
