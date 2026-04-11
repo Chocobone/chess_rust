@@ -20,7 +20,9 @@ def get_board_features(board):
         piece = board.piece_at(i)
         if piece:
             # piece.piece_type은 1(Pawn)~6(King). 흑이면 +6
-            squares[i] = piece.piece_type if piece.color == chess.WHITE else piece.piece_type + 6
+            squares[i] = (
+                piece.piece_type if piece.color == chess.WHITE else piece.piece_type + 6
+            )
 
     # 1-2. 부가 정보 (Global State)
     # [백 킹사이드 캐슬링, 백 퀸사이드, 흑 킹사이드, 흑 퀸사이드, 50수 규칙(반수), 3수 동형 여부]
@@ -103,7 +105,9 @@ class ChessTransformer(nn.Module):
         self.global_embedding = nn.Linear(6, d_model)
 
         # Transformer Encoder
-        encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, batch_first=True)
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=d_model, nhead=nhead, batch_first=True
+        )
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
 
         # Output Heads (Policy & Value)
@@ -126,13 +130,17 @@ class ChessTransformer(nn.Module):
         batch_size = squares.size(0)
 
         # 1. 64개 칸에 대한 임베딩 생성 (기물 정보 + 위치 정보)
-        positions = torch.arange(64, device=squares.device).unsqueeze(0).expand(batch_size, 64)
+        positions = (
+            torch.arange(64, device=squares.device).unsqueeze(0).expand(batch_size, 64)
+        )
         x_squares = self.piece_embedding(squares) + self.position_embedding(
             positions
         )  # [batch, 64, d_model]
 
         # 2. 부가 정보 임베딩을 시퀀스에 추가 (CLS 토큰과 유사한 역할)
-        x_global = self.global_embedding(global_state).unsqueeze(1)  # [batch, 1, d_model]
+        x_global = self.global_embedding(global_state).unsqueeze(
+            1
+        )  # [batch, 1, d_model]
 
         # 3. 시퀀스 병합: [batch, 65, d_model]
         x = torch.cat([x_global, x_squares], dim=1)
@@ -159,12 +167,14 @@ def train_model():
     vocab_size = len(vocab)
 
     # 데이터셋 및 데이터로더 설정
-    csv_path = "all_lichess_uci_data.csv"  # 데이터 필터링에서 생성한 파일명
+    csv_path = "/local_datasets/yho7374/lichess/csv/all_data.csv"  # 데이터 필터링에서 생성한 파일명
     dataset = ChessDataset(csv_path, vocab)
     dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
 
     # 모델 초기화
-    model = ChessTransformer(vocab_size=vocab_size, d_model=128, nhead=4, num_layers=4).to(device)
+    model = ChessTransformer(
+        vocab_size=vocab_size, d_model=128, nhead=4, num_layers=4
+    ).to(device)
 
     # 손실 함수 및 옵티마이저 (Policy는 CrossEntropy, Value는 MSE 사용)
     criterion_policy = nn.CrossEntropyLoss()
@@ -178,11 +188,17 @@ def train_model():
         total_policy_loss = 0
         total_value_loss = 0
 
-        for batch_idx, (squares, global_state, target_policy, target_value) in enumerate(
-            dataloader
-        ):
+        for batch_idx, (
+            squares,
+            global_state,
+            target_policy,
+            target_value,
+        ) in enumerate(dataloader):
             squares, global_state = squares.to(device), global_state.to(device)
-            target_policy, target_value = target_policy.to(device), target_value.to(device)
+            target_policy, target_value = (
+                target_policy.to(device),
+                target_value.to(device),
+            )
 
             optimizer.zero_grad()
 
