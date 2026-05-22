@@ -365,10 +365,13 @@ def self_play(current_model, vocab, device, temperature=1.0, opponent_model=None
     return final
 
 
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
 # ---------------------------
 # training
 # ---------------------------
-def train(data_dir="data"):
+def train(data_dir=os.path.join(_SCRIPT_DIR, "data"), csv_dir="/local_datasets/yho7374/lichess/csv"):
     TOTAL_EPOCHS = 50
     WARMUP_EPOCHS = 5
     GAMES_PER_EPOCH = 5
@@ -396,14 +399,23 @@ def train(data_dir="data"):
     buffer = PrioritizedReplayBuffer(capacity=20_000, alpha=0.6, beta_start=0.4)
     opponent_pool = OpponentPool(max_size=5)
 
-    train_csv = os.path.join(data_dir, "train.csv")
-    if os.path.exists(train_csv):
-        print("CSV 데이터 로드 중...")
-        csv_samples = load_csv_games(train_csv, vocab)
-        buffer.extend(csv_samples)
-        print(f"  → {len(csv_samples)}개 샘플 로드 완료 (buffer: {len(buffer)})")
+    csv_files = sorted([
+        os.path.join(csv_dir, f)
+        for f in os.listdir(csv_dir)
+        if f.endswith(".csv")
+    ]) if os.path.isdir(csv_dir) else []
+
+    if csv_files:
+        print(f"CSV 데이터 로드 중... ({len(csv_files)}개 파일)")
+        total = 0
+        for csv_path in csv_files:
+            csv_samples = load_csv_games(csv_path, vocab)
+            buffer.extend(csv_samples)
+            total += len(csv_samples)
+            print(f"  {os.path.basename(csv_path)}: {len(csv_samples)}개")
+        print(f"  → 총 {total}개 샘플 로드 완료 (buffer: {len(buffer)})")
     else:
-        print(f"CSV 없음 ({train_csv}), self-play만 사용")
+        print(f"CSV 없음 ({csv_dir}), self-play만 사용")
 
     for epoch in range(TOTAL_EPOCHS):
         # temperature annealing: 초반 탐색(1.5) → 후반 수렴(0.1)
