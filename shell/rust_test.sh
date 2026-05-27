@@ -1,4 +1,4 @@
-#!/usr/bin/bash 
+#!/usr/bin/bash
 #SBATCH -J gambit
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-gpu=8

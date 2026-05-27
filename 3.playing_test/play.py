@@ -11,22 +11,21 @@ import os
 import sys
 
 import chess
-import numpy as np
 import torch
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "training"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from chess_tokenize import build_uci_vocabulary, get_legal_move_mask
-from transformer import ChessTransformer, encode_board, run_mcts
+from 2.training.chess_tokenize import build_uci_vocabulary
+from 2.training.transformer import ChessTransformer, run_mcts
 
 # unicode pieces: (black_symbol, white_symbol)
 _PIECE_SYMBOLS = {
-    chess.PAWN:   ("♟", "♙"),
+    chess.PAWN: ("♟", "♙"),
     chess.KNIGHT: ("♞", "♘"),
     chess.BISHOP: ("♝", "♗"),
-    chess.ROOK:   ("♜", "♖"),
-    chess.QUEEN:  ("♛", "♕"),
-    chess.KING:   ("♚", "♔"),
+    chess.ROOK: ("♜", "♖"),
+    chess.QUEEN: ("♛", "♕"),
+    chess.KING: ("♚", "♔"),
 }
 
 
@@ -42,7 +41,7 @@ def render_board(board: chess.Board, flip: bool = False) -> str:
             piece = board.piece_at(chess.square(f, r))
             if piece is None:
                 light = (f + r) % 2 == 1
-                row += ("· " if light else "  ")
+                row += "· " if light else "  "
             else:
                 sym_b, sym_w = _PIECE_SYMBOLS[piece.piece_type]
                 row += (sym_w if piece.color == chess.WHITE else sym_b) + " "
@@ -85,9 +84,9 @@ def play(ckpt_path: str, user_color: chess.Color, mcts_sims: int = 200) -> None:
     flip = user_color == chess.BLACK
 
     color_str = "백(White)" if user_color == chess.WHITE else "흑(Black)"
-    print(f"\n{'='*44}")
+    print(f"\n{'=' * 44}")
     print(f" 체스 대국 시작  —  플레이어: {color_str}")
-    print(f"{'='*44}")
+    print(f"{'=' * 44}")
 
     while not board.is_game_over():
         print()
@@ -157,7 +156,7 @@ def _model_turn(board: chess.Board, model, vocab, device, sims: int) -> None:
 
 def _print_result(board: chess.Board, user_color: chess.Color) -> None:
     outcome = board.outcome()
-    print(f"\n{'='*44}")
+    print(f"\n{'=' * 44}")
     if outcome is None:
         print(" 게임 종료")
     elif outcome.winner == user_color:
@@ -167,18 +166,21 @@ def _print_result(board: chess.Board, user_color: chess.Color) -> None:
     else:
         print(" 모델이 이겼습니다.")
     print(f" 결과: {board.result()}")
-    print(f"{'='*44}")
+    print(f"{'=' * 44}")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="학습된 체스 AI와 터미널 대국")
     parser.add_argument("checkpoint", help="모델 체크포인트 경로 (.pt)")
     parser.add_argument(
-        "--color", choices=["white", "black"],
+        "--color",
+        choices=["white", "black"],
         help="플레이어 색상 (생략 시 직접 선택)",
     )
     parser.add_argument(
-        "--sims", type=int, default=200,
+        "--sims",
+        type=int,
+        default=200,
         help="MCTS 시뮬레이션 횟수 (기본: 200)",
     )
     args = parser.parse_args()
