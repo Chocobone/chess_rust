@@ -13,10 +13,11 @@ import sys
 import chess
 import torch
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+_REPO_ROOT = "/data/yho7374/repos/chess_rust"
+sys.path.insert(0, os.path.join(_REPO_ROOT, "2.training"))
 
-from 2.training.chess_tokenize import build_uci_vocabulary
-from 2.training.transformer import ChessTransformer, run_mcts
+from chess_tokenize import build_uci_vocabulary
+from transformer import ChessTransformer, run_mcts
 
 # unicode pieces: (black_symbol, white_symbol)
 _PIECE_SYMBOLS = {
