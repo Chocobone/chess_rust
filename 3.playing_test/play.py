@@ -61,7 +61,7 @@ def top_moves(root, board: chess.Board, n: int = 4) -> list:
             san = board.san(chess.Move.from_uci(uci))
         except Exception:
             san = uci
-        candidates.append((uci, san, child.N, child.Q()))
+        candidates.append((uci, san, child.N, float(child.Q())))
     candidates.sort(key=lambda x: -x[2])
     return candidates[:n]
 
